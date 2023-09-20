@@ -1,6 +1,7 @@
 extern crate chrono;
 
 use chrono::Local;
+use std::env;
 use std::fs::File;
 use std::io;
 use std::io::BufRead;
@@ -235,19 +236,33 @@ fn create_team(team_str: &String) -> Team {
     };
 }
 
-fn create_table_from_file() -> Table {
-    let read_file = File::open("table.txt").unwrap();
+fn read_table_from_file() -> Table {
+    let mut file_name_input = String::new();
+    println!("Input the table name: ");
 
-    let reader: BufReader<File> = BufReader::new(read_file);
-
-    let mut teams: Vec<Team> = vec![];
-
-    for line in reader.lines() {
-        let line_contents = line.unwrap();
-        teams.push(create_team(&line_contents));
+    if std::io::stdin().read_line(&mut file_name_input).is_err() {
+        println!("Cannot read input data.");
+        return Table { teams: Vec::new() };
     }
+    let mut current_dir = env::current_dir().unwrap();
 
-    Table { teams: teams }
+    current_dir.push(&file_name_input.trim());
+
+    match File::open(&current_dir) {
+        Ok(read_file) => {
+            let teams = io::BufReader::new(read_file)
+                .lines()
+                .filter_map(|line| line.ok())
+                .map(|line| create_team(&line))
+                .collect();
+            println!("Table read successfully!");
+            Table { teams: teams }
+        }
+        Err(_) => {
+            println!("Couldn't parse table file with name {}", &file_name_input);
+            Table { teams: Vec::new() }
+        }
+    }
 }
 
 fn parse_result(result_str: &String, table: &mut Table) {
@@ -411,7 +426,7 @@ fn main() {
                 Some(Commands::PrintTable) => table.print(),
                 Some(Commands::AddResult) => add_result(&mut table),
                 Some(Commands::ReadResultFile) => read_result_from_file(&mut table).unwrap(),
-                Some(Commands::ReadTableFile) => table = create_table_from_file(),
+                Some(Commands::ReadTableFile) => table = read_table_from_file(),
                 Some(Commands::SaveTableToFile) => save_table_to_file(&table).unwrap(),
                 Some(Commands::Exit) => return,
                 None => println!("Unknown command."),
