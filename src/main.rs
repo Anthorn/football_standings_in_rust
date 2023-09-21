@@ -8,6 +8,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
 
+#[derive(Default, Debug)]
 struct Team {
     name: String,
     played: u8,
@@ -120,6 +121,7 @@ impl Table {
             );
         }
     }
+
     pub fn update_table(&mut self) {
         for team in &mut self.teams {
             team.calc_stats();
@@ -207,33 +209,49 @@ fn create_table(teams: &[String]) -> Table {
     }
 }
 
-fn create_team(team_str: &String) -> Team {
+fn create_team(team_str: &String) -> Result<Team, &'static str> {
     let parts: Vec<&str> = team_str.split(";").collect();
 
-    let new_team = create_team_template();
-
     if parts.len() != 7 {
-        println!("Invalid table format.");
-        return new_team;
-    }
+        Err("Team line contains more than seven(7) parts. Please check your table file.")
+    } else {
+        let team_name = parts[0].trim();
 
-    let team_name = parts[0].trim();
-    let played = parts[1].trim().parse().unwrap();
-    let wins = parts[2].trim().parse().unwrap();
-    let draws = parts[3].trim().parse().unwrap();
-    let defeats = parts[4].trim().parse().unwrap();
-    let goal_scored = parts[5].trim().parse().unwrap();
-    let goal_conceded = parts[6].trim().parse().unwrap();
-    return Team {
-        name: team_name.to_string(),
-        played: played,
-        wins: wins,
-        draws: draws,
-        defeats: defeats,
-        goal_scored: goal_scored,
-        goal_against: goal_conceded,
-        ..new_team
-    };
+        let played = parts[1]
+            .trim()
+            .parse::<u8>()
+            .map_err(|_| "Could not parse number of played games.")?;
+        let wins = parts[2]
+            .trim()
+            .parse::<u8>()
+            .map_err(|_| "Could not parse number of wins.")?;
+        let draws = parts[3]
+            .trim()
+            .parse::<u8>()
+            .map_err(|_| "Could not parse number of draws.")?;
+        let defeats = parts[4]
+            .trim()
+            .parse::<u8>()
+            .map_err(|_| "Could not parse number of defeats.")?;
+        let goal_scored = parts[5]
+            .trim()
+            .parse::<i32>()
+            .map_err(|_| "Could not parse number of goals scored.")?;
+        let goal_conceded = parts[6]
+            .trim()
+            .parse::<i32>()
+            .map_err(|_| "Could not parse number of goals conceded.")?;
+        Ok(Team {
+            name: team_name.to_string(),
+            played: played,
+            wins: wins,
+            draws: draws,
+            defeats: defeats,
+            goal_scored: goal_scored,
+            goal_against: goal_conceded,
+            ..create_team_template()
+        })
+    }
 }
 
 fn read_table_from_file() -> Table {
@@ -250,11 +268,30 @@ fn read_table_from_file() -> Table {
 
     match File::open(&current_dir) {
         Ok(read_file) => {
-            let teams = io::BufReader::new(read_file)
+            let teams_and_errors: (
+                Vec<Result<Team, &'static str>>,
+                Vec<Result<Team, &'static str>>,
+            ) = io::BufReader::new(read_file)
                 .lines()
                 .filter_map(|line| line.ok())
                 .map(|line| create_team(&line))
+                .partition(|created_teams| created_teams.is_ok());
+
+            if teams_and_errors.1.len() > 0 {
+                println!("Failed to parse {:?}", &current_dir);
+                teams_and_errors
+                    .1
+                    .into_iter()
+                    .for_each(|f| println!("{}", f.unwrap_err()));
+                return Table { teams: Vec::new() };
+            }
+
+            let teams: Vec<Team> = teams_and_errors
+                .0
+                .into_iter()
+                .map(|teams| teams.unwrap())
                 .collect();
+
             println!("Table read successfully!");
             Table { teams: teams }
         }
