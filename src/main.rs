@@ -21,7 +21,7 @@ impl Commands {
             "3" => Some(Commands::ReadResultFile),
             "4" => Some(Commands::ReadTableFile),
             "5" => Some(Commands::SaveTableToFile),
-            "exit" => Some(Commands::Exit),
+            "6" => Some(Commands::Exit),
             _ => None,
         }
     }
@@ -58,6 +58,7 @@ fn main() {
         println!("3. Read multiple results from file.");
         println!("4. Read table from file.");
         println!("5. Save current table.");
+        println!("6. Exit.");
 
         inputs.clear();
         table.update_table();
