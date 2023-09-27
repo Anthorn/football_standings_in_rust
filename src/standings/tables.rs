@@ -122,3 +122,115 @@ pub fn create_table(teams: &[String]) -> Table {
         teams: current_teams,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_create_table() {
+        let team_names = vec![
+            String::from("FC Test"),
+            String::from("Foo"),
+            String::from("Bar"),
+        ];
+
+        let test_table = create_table(&team_names);
+        assert_eq!(test_table.teams.len(), 3);
+
+        test_table
+            .teams
+            .into_iter()
+            .enumerate()
+            .for_each(|(i, team)| assert_eq!(team_names[i], team.name));
+    }
+
+    #[test]
+    fn test_add_game_home_team_win() {
+        let team_names = vec![
+            String::from("FC Test"),
+            String::from("Foo"),
+            String::from("Bar"),
+        ];
+
+        let mut test_table = create_table(&team_names);
+        let home_team = team_names[0].as_str();
+        let away_team = team_names[1].as_str();
+
+        test_table.add_game(home_team, away_team, 2, 1);
+
+        assert_eq!(test_table.teams[0].wins, 1);
+        assert_eq!(test_table.teams[0].goal_scored, 2);
+        assert_eq!(test_table.teams[0].goal_against, 1);
+
+        assert_eq!(test_table.teams[1].defeats, 1);
+        assert_eq!(test_table.teams[1].goal_scored, 1);
+        assert_eq!(test_table.teams[1].goal_against, 2);
+    }
+
+    #[test]
+    fn test_add_game_away_team_win() {
+        let team_names = vec![
+            String::from("FC Test"),
+            String::from("Foo"),
+            String::from("Bar"),
+        ];
+
+        let mut test_table = create_table(&team_names);
+        let home_team = team_names[0].as_str();
+        let away_team = team_names[1].as_str();
+
+        test_table.add_game(home_team, away_team, 1, 2);
+
+        assert_eq!(test_table.teams[0].defeats, 1);
+        assert_eq!(test_table.teams[0].goal_scored, 1);
+        assert_eq!(test_table.teams[0].goal_against, 2);
+
+        assert_eq!(test_table.teams[1].wins, 1);
+        assert_eq!(test_table.teams[1].goal_scored, 2);
+        assert_eq!(test_table.teams[1].goal_against, 1);
+    }
+
+    #[test]
+    fn test_add_game_draw() {
+        let team_names = vec![
+            String::from("FC Test"),
+            String::from("Foo"),
+            String::from("Bar"),
+        ];
+
+        let mut test_table = create_table(&team_names);
+        let home_team = team_names[0].as_str();
+        let away_team = team_names[1].as_str();
+
+        test_table.add_game(home_team, away_team, 2, 2);
+
+        assert_eq!(test_table.teams[0].draws, 1);
+        assert_eq!(test_table.teams[0].goal_scored, 2);
+        assert_eq!(test_table.teams[0].goal_against, 2);
+
+        assert_eq!(test_table.teams[1].draws, 1);
+        assert_eq!(test_table.teams[1].goal_scored, 2);
+        assert_eq!(test_table.teams[1].goal_against, 2);
+    }
+
+    #[test]
+    fn test_update_table() {
+        let team_names = vec![
+            String::from("FC Test"),
+            String::from("Foo"),
+            String::from("Bar"),
+        ];
+
+        let mut test_table = create_table(&team_names);
+        let home_team = team_names[0].as_str();
+        let away_team = team_names[1].as_str();
+
+        test_table.add_game(home_team, away_team, 1, 2);
+        test_table.update_table();
+        assert_eq!(test_table.teams[0].points, 3);
+        assert_eq!(test_table.teams[0].name, away_team);
+        assert_eq!(test_table.teams[2].points, 0);
+        assert_eq!(test_table.teams[2].name, home_team); // Team FC test should now be placed last since it has worse goal summart than Bar.
+    }
+}
