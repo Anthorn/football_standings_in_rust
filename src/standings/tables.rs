@@ -231,6 +231,6 @@ mod tests {
         assert_eq!(test_table.teams[0].points, 3);
         assert_eq!(test_table.teams[0].name, away_team);
         assert_eq!(test_table.teams[2].points, 0);
-        assert_eq!(test_table.teams[2].name, home_team); // Team FC test should now be placed last since it has worse goal summart than Bar.
+        assert_eq!(test_table.teams[2].name, home_team); // Team FC test should now be placed last since they have worse goal summary than Bar.
     }
 }

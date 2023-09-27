@@ -9,53 +9,42 @@ use std::io::Write;
 pub mod tables;
 pub mod team;
 
-fn parse_result(result_str: &String, table: &mut tables::Table) {
+fn parse_result(result_str: &String, table: &mut tables::Table) -> Result<(), &'static str> {
     let parts: Vec<&str> = result_str.split(";").collect();
 
     if parts.len() != 2 {
-        println!("Invalid result format.");
-        return;
+        return Err("Invalid result format.");
     }
+
     let teams: Vec<&str> = parts[0].split('-').collect();
     let score: Vec<&str> = parts[1].split('-').collect();
 
     if teams.len() != 2 || score.len() != 2 {
-        println!("Invalid score format.");
-        return;
+        return Err("Invalid score format.");
     }
 
     let home_team = teams[0].trim();
     let away_team = teams[1].trim();
-
     let home_team_exists = table.teams.iter().any(|team| team.name == home_team);
+
     if home_team_exists == false {
-        println!("Home team does not exist.");
-        return;
+        return Err("Home team does not exist.");
     }
 
     let away_team_exists = table.teams.iter().any(|team| team.name == away_team);
+
     if away_team_exists == false {
-        println!("Away team does not exist.");
-        return;
+        return Err("Away team does not exist");
     }
 
-    let goal_home_team_result = score[0].trim().parse::<i32>();
-    let goal_away_team_result = score[1].trim().parse::<i32>();
-
-    let goal_home_team: i32 = match goal_home_team_result {
-        Ok(value) => value,
-        Err(_) => {
-            println!("Cannot parse the home team score.");
-            return;
-        }
-    };
-    let goal_away_team: i32 = match goal_away_team_result {
-        Ok(value) => value,
-        Err(_) => {
-            println!("Cannot parse the away team score.");
-            return;
-        }
-    };
+    let goal_home_team = score[0]
+        .trim()
+        .parse::<i32>()
+        .map_err(|_| "Cannot parse home team score.")?;
+    let goal_away_team = score[1]
+        .trim()
+        .parse::<i32>()
+        .map_err(|_| "Cannot parse the away team score.")?;
 
     println!(
         "Adding {} - {} {}-{}",
@@ -63,6 +52,8 @@ fn parse_result(result_str: &String, table: &mut tables::Table) {
     );
 
     table.add_game(home_team, away_team, goal_home_team, goal_away_team);
+
+    return Ok(());
 }
 
 pub fn add_result(table: &mut tables::Table) {
@@ -77,7 +68,11 @@ pub fn add_result(table: &mut tables::Table) {
             if result_input == "done" {
                 return;
             }
-            parse_result(&result_input, table);
+            let result = parse_result(&result_input, table);
+
+            if result.is_err() {
+                println!("{:?}", result);
+            }
         }
     }
 }
@@ -91,7 +86,10 @@ pub fn read_result_from_file(table: &mut tables::Table) -> std::io::Result<()> {
 
     for line in reader.lines() {
         let line_contents = line?;
-        parse_result(&line_contents, table);
+        let result = parse_result(&line_contents, table);
+        if result.is_err() {
+            println!("{:?}", result);
+        }
     }
 
     Ok(())
