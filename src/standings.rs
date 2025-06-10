@@ -9,6 +9,27 @@ use std::io::Write;
 pub mod tables;
 pub mod team;
 
+fn parse_teams(teams_str: &String) -> Result<Vec<String>, &'static str> {
+    let teams: Vec<&str> = teams_str.split(',').collect();
+    if teams.is_empty() {
+        return Err("No teams provided.");
+    }
+
+    let mut team_names: Vec<String> = Vec::new();
+    for team in teams {
+        let trimmed_team = team.trim().to_string();
+        if !trimmed_team.is_empty() {
+            team_names.push(trimmed_team);
+        }
+    }
+
+    if team_names.is_empty() {
+        return Err("No valid teams found.");
+    }
+
+    Ok(team_names)
+}
+
 fn parse_result(result_str: &String, table: &mut tables::Table) -> Result<(), &'static str> {
     let parts: Vec<&str> = result_str.split(";").collect();
 
@@ -124,7 +145,7 @@ pub fn save_table_to_file(table: &tables::Table) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn read_table_from_file() -> tables::Table {
+pub fn read_table_from_input_file() -> tables::Table {
     let mut file_name_input = String::new();
     println!("Input the table name: ");
 
@@ -132,9 +153,12 @@ pub fn read_table_from_file() -> tables::Table {
         println!("Cannot read input data.");
         return tables::Table { teams: Vec::new() };
     }
-    let mut current_dir = env::current_dir().unwrap();
+    return read_table_from_file(&file_name_input);
+}
 
-    current_dir.push(&file_name_input.trim());
+pub fn read_table_from_file(table_name: &str) -> tables::Table {
+    let mut current_dir = env::current_dir().unwrap();
+    current_dir.push(table_name);
 
     match File::open(&current_dir) {
         Ok(read_file) => {
@@ -166,7 +190,7 @@ pub fn read_table_from_file() -> tables::Table {
             tables::Table { teams: teams }
         }
         Err(_) => {
-            println!("Couldn't parse table file with name {}", &file_name_input);
+            println!("Couldn't parse table file with name {}", table_name);
             tables::Table { teams: Vec::new() }
         }
     }

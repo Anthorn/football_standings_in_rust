@@ -47,7 +47,7 @@ fn main() {
         String::from("Värnamo"),
         String::from("Sirius"),
     ];
-    let mut table: standings::tables::Table = standings::tables::create_table(&teams);
+    let mut table: standings::tables::Table = standings::read_table_from_file("table.txt");
 
     let mut inputs = String::new();
 
@@ -74,7 +74,7 @@ fn main() {
                 Some(Commands::ReadResultFile) => {
                     standings::read_result_from_file(&mut table).unwrap()
                 }
-                Some(Commands::ReadTableFile) => table = standings::read_table_from_file(),
+                Some(Commands::ReadTableFile) => table = standings::read_table_from_input_file(),
                 Some(Commands::SaveTableToFile) => standings::save_table_to_file(&table).unwrap(),
                 Some(Commands::Exit) => return,
                 None => println!("Unknown command."),
